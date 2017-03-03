@@ -1,12 +1,10 @@
 # encoding: utf-8
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import os
 import sys
 import warnings
 from datetime import timedelta
-from optparse import make_option
 
 try:
     from django.db import close_old_connections
@@ -14,10 +12,11 @@ except ImportError:
     # This can be removed when we drop support for Django 1.7 and earlier:
     from django.db import close_connection as close_old_connections
 
-from django.core.management.base import LabelCommand
+from django.core.management.base import BaseCommand
 from django.db import reset_queries
 
 from haystack import connections as haystack_connections
+from haystack.exceptions import NotHandled
 from haystack.query import SearchQuerySet
 from haystack.utils.app_loading import haystack_get_models, haystack_load_apps
 
@@ -41,8 +40,6 @@ except ImportError:
 DEFAULT_BATCH_SIZE = None
 DEFAULT_AGE = None
 # DEFAULT_MAX_RETRIES = 5
-APP = 'app'
-MODEL = 'model'
 
 
 def worker(bits):
@@ -100,7 +97,7 @@ def do_update(backend, index, qs, start, end, total, verbosity=1, commit=True):
     reset_queries()
 
 
-class Command(LabelCommand):
+class Command(BaseCommand):
     help = "Freshens the index for the given app(s)."
 
     def add_arguments(self, parser):
@@ -155,7 +152,7 @@ class Command(LabelCommand):
         self.start_date = None
         self.end_date = None
         self.remove = options.get('remove', False)
-        self.workers = int(options.get('workers', 0))
+        self.workers = options.get('workers', 0)
         self.commit = options.get('commit', True)
 
         if sys.version_info < (2, 7):
@@ -190,22 +187,16 @@ class Command(LabelCommand):
             except ValueError:
                 pass
 
-        if not items:
-            items = haystack_load_apps()
-
-        return super(Command, self).handle(*items, **options)
-
-    def handle_label(self, label, **options):
-        for using in self.backends:
-            try:
-                self.update_backend(label, using)
-            except:
-                logging.exception("Error updating %s using %s ", label, using)
-                raise
+        labels = options.get('app_label') or haystack_load_apps()
+        for label in labels:
+            for using in self.backends:
+                try:
+                    self.update_backend(label, using)
+                except:
+                    print("Error updating %s using %s ".format(label, using))
+                    raise
 
     def update_backend(self, label, using):
-        from haystack.exceptions import NotHandled
-
         backend = haystack_connections[using].get_backend()
         unified_index = haystack_connections[using].get_unified_index()
 
