@@ -104,10 +104,10 @@ class Command(LabelCommand):
     help = "Freshens the index for the given app(s)."
 
     def add_arguments(self, parser):
-        # parser.add_argument(
-        #     'app_label', nargs='*',
-        #     help='App label of an application to update the search index.'
-        # )
+        parser.add_argument(
+            'app_label', nargs='*',
+            help='App label of an application to update the search index.'
+        )
         parser.add_argument(
             '-a', '--age', type=int, default=DEFAULT_AGE,
             help='Number of hours back to consider objects new.'
