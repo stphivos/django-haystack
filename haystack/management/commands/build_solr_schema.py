@@ -15,13 +15,16 @@ from haystack.backends.solr_backend import SolrSearchBackend
 
 class Command(BaseCommand):
     help = "Generates a Solr schema that reflects the indexes."
-    base_options = (
-        make_option("-f", "--filename", action="store", type="string", dest="filename",
-                    help='If provided, directs output to a file instead of stdout.'),
-        make_option("-u", "--using", action="store", type="string", dest="using", default=constants.DEFAULT_ALIAS,
-                    help='If provided, chooses a connection to work with.'),
-    )
-    option_list = BaseCommand.option_list + base_options
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "-f", "--filename",
+            help='If provided, directs output to a file instead of stdout.'
+        )
+        parser.add_argument(
+            "-u", "--using", default=constants.DEFAULT_ALIAS,
+            help='If provided, chooses a connection to work with.'
+        )
 
     def handle(self, **options):
         """Generates a Solr schema that reflects the indexes."""

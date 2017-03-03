@@ -40,6 +40,7 @@ except ImportError:
 
 DEFAULT_BATCH_SIZE = None
 DEFAULT_AGE = None
+# DEFAULT_MAX_RETRIES = 5
 APP = 'app'
 MODEL = 'model'
 
@@ -101,40 +102,52 @@ def do_update(backend, index, qs, start, end, total, verbosity=1, commit=True):
 
 class Command(LabelCommand):
     help = "Freshens the index for the given app(s)."
-    base_options = (
-        make_option('-a', '--age', action='store', dest='age',
-            default=DEFAULT_AGE, type='int',
+
+    def add_arguments(self, parser):
+        # parser.add_argument(
+        #     'app_label', nargs='*',
+        #     help='App label of an application to update the search index.'
+        # )
+        parser.add_argument(
+            '-a', '--age', type=int, default=DEFAULT_AGE,
             help='Number of hours back to consider objects new.'
-        ),
-        make_option('-s', '--start', action='store', dest='start_date',
-            default=None, type='string',
-            help='The start date for indexing within. Can be any dateutil-parsable string, recommended to be YYYY-MM-DDTHH:MM:SS.'
-        ),
-        make_option('-e', '--end', action='store', dest='end_date',
-            default=None, type='string',
-            help='The end date for indexing within. Can be any dateutil-parsable string, recommended to be YYYY-MM-DDTHH:MM:SS.'
-        ),
-        make_option('-b', '--batch-size', action='store', dest='batchsize',
-            default=None, type='int',
+        )
+        parser.add_argument(
+            '-s', '--start', dest='start_date',
+            help='The start date for indexing within. Can be any dateutil-parsable string, '
+                 'recommended to be YYYY-MM-DDTHH:MM:SS.'
+        )
+        parser.add_argument(
+            '-e', '--end', dest='end_date',
+            help='The end date for indexing within. Can be any dateutil-parsable string, '
+                 'recommended to be YYYY-MM-DDTHH:MM:SS.'
+        )
+        parser.add_argument(
+            '-b', '--batch-size', dest='batchsize', type=int,
             help='Number of items to index at once.'
-        ),
-        make_option('-r', '--remove', action='store_true', dest='remove',
-            default=False, help='Remove objects from the index that are no longer present in the database.'
-        ),
-        make_option("-u", "--using", action="append", dest="using",
-            default=[],
+        )
+        parser.add_argument(
+            '-r', '--remove', action='store_true', default=False,
+            help='Remove objects from the index that are no longer present in the database.'
+        )
+        parser.add_argument(
+            '-u', '--using', action='append', default=[],
             help='Update only the named backend (can be used multiple times). '
                  'By default all backends will be updated.'
-        ),
-        make_option('-k', '--workers', action='store', dest='workers',
-            default=0, type='int',
-            help='Allows for the use multiple workers to parallelize indexing. Requires multiprocessing.'
-        ),
-        make_option('--nocommit', action='store_false', dest='commit',
+        )
+        parser.add_argument(
+            '-k', '--workers', type=int, default=0,
+            help='Allows for the use multiple workers to parallelize indexing.'
+        )
+        parser.add_argument(
+            '--nocommit', action='store_false', dest='commit',
             default=True, help='Will pass commit=False to the backend.'
-        ),
-    )
-    option_list = LabelCommand.option_list + base_options
+        )
+        # parser.add_argument(
+        #     '-t', '--max-retries', action='store', dest='max_retries',
+        #     type=int, default=DEFAULT_MAX_RETRIES,
+        #     help='Maximum number of attempts to write to the backend when an error occurs.'
+        # )
 
     def handle(self, *items, **options):
         self.verbosity = int(options.get('verbosity', 1))
